@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reel Intelligence — AI Recommendation Agent</title>
+  <meta name="description" content="AI agent that infers your deeper tech interests from Instagram Reel watch patterns and recommends genuinely useful educational content." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Design Tokens ──────────────────────────────────── */
+    :root {
+      --bg:         #0b0c10;
+      --surface:    #13141a;
+      --border:     #2a2d3a;
+      --accent:     #6c63ff;
+      --accent2:    #a78bfa;
+      --accent-glow:rgba(108,99,255,0.2);
+      --green:      #4ade80;
+      --red:        #f87171;
+      --amber:      #fbbf24;
+      --blue:       #60a5fa;
+      --text:       #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim:   #cbd5e1;
+      --radius:     14px;
+      --radius-sm:  9px;
+      --mono:       'JetBrains Mono', monospace;
+    }
+
+    /* ─── Reset ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding-bottom: 100px;
+      line-height: 1.65;
+    }
+
+    /* ─── Animations ─────────────────────────────────────── */
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes glowPulse {
+      0%,100% { box-shadow: 0 0 30px var(--accent-glow); }
+      50%      { box-shadow: 0 0 55px rgba(108,99,255,0.35); }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position:  200% center; }
+    }
+    @keyframes badgePop {
+      0%   { transform: scale(0.7); opacity: 0; }
+      70%  { transform: scale(1.1); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    /* ─── Header ─────────────────────────────────────────── */
+    header {
+      text-align: center;
+      padding: 60px 24px 48px;
+      border-bottom: 1px solid var(--border);
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(108,99,255,0.1) 0%, transparent 70%),
+                  linear-gradient(180deg, #0d0e16 0%, var(--bg) 100%);
+    }
+    .badge-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 22px;
+    }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      border-radius: 20px;
+      padding: 4px 14px;
+    }
+    .badge-purple { color: var(--accent2); border: 1px solid rgba(167,139,250,.3); background: rgba(167,139,250,.06); }
+    .badge-green  { color: var(--green);   border: 1px solid rgba(74,222,128,.3);  background: rgba(74,222,128,.06); }
+    .badge-blue   { color: var(--blue);    border: 1px solid rgba(96,165,250,.3);  background: rgba(96,165,250,.06); }
+
+    h1 {
+      font-size: clamp(32px, 6vw, 52px);
+      font-weight: 800;
+      letter-spacing: -.03em;
+      background: linear-gradient(135deg, #fff 25%, var(--accent2) 75%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 14px;
+    }
+    .subtitle {
+      color: var(--text-dim);
+      font-size: 16px;
+      max-width: 580px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+    .pipeline-pills {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .pipe-pill {
+      font-size: 12px;
+      font-weight: 600;
+      font-family: var(--mono);
+      padding: 5px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      background: var(--surface);
+    }
+    .pipe-pill span { color: var(--accent2); margin-right: 5px; }
+
+    /* ─── Container ──────────────────────────────────────── */
+    .container { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+
+    /* ─── Control Panel ──────────────────────────────────── */
+    .control-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin: 36px 0 0;
+      animation: fadeSlideUp .5s ease both;
+    }
+    .control-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: block;
+    }
+    .control-row {
+      display: flex;
+      gap: 12px;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    /* Dataset select */
+    .dataset-select {
+      flex: 1;
+      min-width: 200px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 12px 16px;
+      outline: none;
+      cursor: pointer;
+      transition: border-color .2s;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 38px;
+    }
+    .dataset-select:focus { border-color: var(--accent); }
+    .dataset-select option { background: #1c1e28; }
+
+    /* Analyze button */
+    .btn-analyze {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 28px;
+      border-radius: var(--radius-sm);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 24px var(--accent-glow);
+      transition: all .2s;
+      white-space: nowrap;
+    }
+    .btn-analyze:hover:not(:disabled) {
+      background: #7c74ff;
+      box-shadow: 0 0 38px rgba(108,99,255,.4);
+      transform: translateY(-1px);
+    }
+    .btn-analyze:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .btn-analyze .btn-icon { font-size: 18px; }
+
+    .control-hint {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* ─── Progress ───────────────────────────────────────── */
+    .progress-section { margin-top: 32px; display: none; }
+    .progress-section.visible { display: block; }
+    .progress-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .stage-steps { display: flex; flex-direction: column; gap: 8px; }
+    .stage-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 18px;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      transition: all .4s;
+    }
+    .stage-step.active  { border-color: var(--accent); background: rgba(108,99,255,.07); }
+    .stage-step.done    { border-color: rgba(74,222,128,.35); background: rgba(74,222,128,.04); animation: fadeSlideIn .3s ease both; }
+    .stage-step.pending { opacity: .38; }
+    .step-icon  { font-size: 18px; width: 22px; text-align: center; flex-shrink: 0; margin-top: 2px; }
+    .step-body  { flex: 1; }
+    .step-label { font-weight: 600; font-size: 14px; }
+    .step-detail {
+      font-size: 12px;
+      font-family: var(--mono);
+      color: var(--text-muted);
+      margin-top: 4px;
+      line-height: 1.55;
+    }
+    .step-detail .ok     { color: var(--green); }
+    .step-detail .dim    { color: var(--text-muted); }
+
+    /* Shimmer loading bar */
+    .shimmer-bar {
+      height: 3px;
+      border-radius: 3px;
+      margin-top: 8px;
+      background: linear-gradient(90deg,
+        var(--border) 25%, rgba(108,99,255,.4) 50%, var(--border) 75%);
+      background-size: 200% auto;
+      animation: shimmer 1.6s linear infinite;
+    }
+
+    /* ─── Section heading ────────────────────────────────── */
+    .section-heading {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin: 40px 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ─── Stage 1 Grid ───────────────────────────────────── */
+    .reel-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .reel-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      opacity: 0;
+      animation: fadeSlideIn .35s ease forwards;
+    }
+    .reel-card.excluded { opacity: 0; animation: fadeSlideIn .35s ease forwards; filter: grayscale(.6); border-style: dashed; }
+    .reel-id { font-family: var(--mono); font-size: 11px; color: var(--accent2); font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    .excl-tag { font-size: 10px; font-weight: 700; color: var(--red); background: rgba(248,113,113,.1); border: 1px solid rgba(248,113,113,.2); border-radius: 4px; padding: 1px 7px; letter-spacing: .05em; }
+    .reel-field { margin-bottom: 11px; }
+    .reel-field:last-child { margin-bottom: 0; }
+    .rfl { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+    .rfv { font-size: 13px; color: var(--text); line-height: 1.45; }
+    .ctype { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .05em; }
+    .ct-meme       { background: rgba(251,191,36,.12); color: var(--amber); }
+    .ct-lifestyle  { background: rgba(96,165,250,.12);  color: var(--blue); }
+    .ct-news       { background: rgba(74,222,128,.12);  color: var(--green); }
+    .ct-comparison { background: rgba(167,139,250,.12); color: var(--accent2); }
+    .ct-hype-bait  { background: rgba(248,113,113,.12); color: var(--red); }
+    .ct-tutorial   { background: rgba(108,99,255,.15);  color: var(--accent); }
+
+    /* ─── Recommendation Card ────────────────────────────── */
+    .rec-card {
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      overflow: hidden;
+      animation: glowPulse 3s ease-in-out infinite, fadeSlideIn .5s ease both;
+    }
+    .rec-header {
+      padding: 22px 28px;
+      background: linear-gradient(90deg, rgba(108,99,255,.15) 0%, rgba(167,139,250,.07) 100%);
+      border-bottom: 1px solid rgba(108,99,255,.2);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .rec-header h2 { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
+    .rec-body { padding: 0 28px 28px; }
+
+    .rec-row {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 10px 20px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+      align-items: start;
+    }
+    .rec-row:last-child { border-bottom: none; }
+    .rl { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-muted); padding-top: 3px; }
+    .rv { font-size: 15px; color: var(--text); line-height: 1.6; }
+    .rv.mono { font-family: var(--mono); font-size: 13px; color: var(--accent2); }
+    .rv.title { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: -.01em; line-height: 1.3; }
+
+    /* Badges / pills */
+    .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; padding: 5px 14px; border-radius: 20px; }
+    .pill-green  { background: rgba(74,222,128,.12); color: var(--green);   border: 1px solid rgba(74,222,128,.2); }
+    .pill-amber  { background: rgba(251,191,36,.12); color: var(--amber);   border: 1px solid rgba(251,191,36,.2); }
+    .pill-red    { background: rgba(248,113,113,.12);color: var(--red);     border: 1px solid rgba(248,113,113,.2); }
+    .pill-purple { background: rgba(108,99,255,.15); color: var(--accent2); border: 1px solid rgba(108,99,255,.2); }
+
+    /* Excluded badge */
+    .excl-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--red);
+      background: rgba(248,113,113,.08);
+      border: 1px solid rgba(248,113,113,.2);
+      border-radius: 20px;
+      padding: 2px 10px;
+      margin-left: 8px;
+      vertical-align: middle;
+      animation: badgePop .4s ease both;
+      letter-spacing: .03em;
+    }
+
+    /* Hype filter log */
+    .hype-log {
+      margin-top: 14px;
+      border: 1px solid rgba(248,113,113,.2);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .hype-log-header {
+      background: rgba(248,113,113,.06);
+      padding: 8px 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+      color: var(--red);
+      border-bottom: 1px solid rgba(248,113,113,.15);
+    }
+    .hype-entry {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(248,113,113,.1);
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+    }
+    .hype-entry:last-child { border-bottom: none; }
+    .rejected-badge {
+      flex-shrink: 0;
+      font-size: 9px;
+      font-weight: 800;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--red);
+      background: rgba(248,113,113,.12);
+      border: 1px solid rgba(248,113,113,.3);
+      border-radius: 4px;
+      padding: 3px 8px;
+      margin-top: 1px;
+    }
+    .hype-title-struck {
+      font-size: 13px;
+      font-weight: 500;
+      text-decoration: line-through;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .hype-reason {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      line-height: 1.4;
+    }
+
+    /* ─── Misc ───────────────────────────────────────────── */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,.15);
+      border-top-color: var(--accent2);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      flex-shrink: 0;
+    }
+    .error-box {
+      background: rgba(248,113,113,.06);
+      border: 1px solid rgba(248,113,113,.25);
+      border-radius: var(--radius-sm);
+      padding: 16px 20px;
+      color: var(--red);
+      font-size: 14px;
+      margin-top: 24px;
+    }
+    .hidden { display: none !important; }
+    /* Screen-reader-only text (visually hidden but accessible) */
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    @media (max-width: 640px) {
+      .rec-row { grid-template-columns: 1fr; gap: 5px; }
+      .control-row { flex-direction: column; }
+      .btn-analyze { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ─── Header ─────────────────────────────────────────── -->
+<header>
+  <div class="badge-row">
+    <span class="header-badge badge-purple"><span aria-hidden="true">✦</span> Hack2Skill Challenge</span>
+    <span class="header-badge badge-green"><span role="img" aria-label="Lightning fast">⚡</span> 1 API Call Total</span>
+    <span class="header-badge badge-blue"><span role="img" aria-label="Security">🔒</span> Keys Server-Side</span>
+  </div>
+  <h1><span role="img" aria-label="Target">🎯</span> Reel Intelligence</h1>
+  <p class="subtitle">
+    AI agent that infers your <em>deeper</em> tech interests from Reel watch patterns —
+    not surface keywords — and recommends what you actually need to watch next.
+  </p>
+  <div class="pipeline-pills">
+    <div class="pipe-pill"><span>1</span>Batch Extract Topics</div>
+    <div class="pipe-pill"><span>2</span>Aggregate + Recommend + Filter Hype</div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ─── Control Panel ───────────────────────────────── -->
+  <div class="control-panel">
+    <label class="control-label" for="datasetSelect">Select Dataset to Analyze</label>
+    <div class="control-row">
+      <select id="datasetSelect" class="dataset-select">
+        <option value="main">📱 Original Dataset — 8 Reels (SWE career cluster)</option>
+        <option value="test">⚡ Generalization Test — 4 Reels (Python · Cybersec · Bootcamp · Gaming)</option>
+      </select>
+      <button id="btnAnalyze" class="btn-analyze" onclick="runPipeline()" aria-label="Analyze selected dataset">
+        <span class="btn-icon" aria-hidden="true">▶</span> Analyze
+      </button>
+    </div>
+    <p class="control-hint"><span role="img" aria-label="Security lock">🔒</span> API keys are stored as server environment variables — never sent to your browser</p>
+  </div>
+
+  <!-- ─── Error ─────────────────────────────────────────── -->
+  <div id="errorBox" class="error-box hidden"></div>
+
+  <!-- ─── Progress ─────────────────────────────────────── -->
+  <div id="progressSection" class="progress-section">
+    <h2 class="progress-title">Pipeline Progress</h2>
+    <div class="stage-steps" aria-live="polite" aria-label="Pipeline status">
+      <div id="step1" class="stage-step pending">
+        <span class="step-icon" id="icon1">🔍</span>
+        <div class="step-body">
+          <div class="step-label">Stage 1 — Batch topic extraction (1 call for all reels)</div>
+          <div class="step-detail" id="detail1">—</div>
+          <div class="shimmer-bar" id="shimmer1" style="display:none"></div>
+        </div>
+      </div>
+      <div id="step2" class="stage-step pending">
+        <span class="step-icon" id="icon2">🧠</span>
+        <div class="step-body">
+          <div class="step-label">Stage 2+3 — Interest aggregation + recommendation + hype filter (1 merged call)</div>
+          <div class="step-detail" id="detail2">—</div>
+          <div class="shimmer-bar" id="shimmer2" style="display:none"></div>
+        </div>
+      </div>
+      <div id="step3" class="stage-step pending">
+        <span class="step-icon" id="icon3">📋</span>
+        <div class="step-body">
+          <div class="step-label">Stage 4 — Format output</div>
+          <div class="step-detail" id="detail3">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── Stage 1 per-reel cards ─────────────────────── -->
+  <div id="stage1Section" class="hidden">
+    <h2 class="section-heading">Per-Reel Analysis — Stage 1</h2>
+    <div id="reelGrid" class="reel-grid"></div>
+  </div>
+
+  <!-- ─── Final recommendation ─────────────────────────── -->
+  <div id="recSection" class="hidden">
+    <h2 class="section-heading">Recommendation — Stages 2 <span aria-hidden="true">→</span><span class="sr-only">to</span> 4</h2>
+    <div id="recCard"></div>
+  </div>
+
+</main>
+
+<!-- ─── App Logic ──────────────────────────────────────── -->
+<script>
+  let isRunning = false;
+  let simTimers = [];
+
+  // Embedded datasets — client-side copy so server doesn't need to echo them back
+  const REELS_DATA = [
+    { id:"reel_001", caption:"me explaining to my mom why i haven't slept 😭💀 #relatable", hashtags:["#relatable","#momsbelike","#comedy"] },
+    { id:"reel_002", caption:"the most disrespectful play i've ever made 💀🎮 | Valorant", hashtags:["#valorant","#gaming"] },
+    { id:"reel_003", caption:"Java developers when they see a NullPointerException at 2am 😂 #javadeveloper #coding", hashtags:["#java","#codingmemes"] },
+    { id:"reel_004", caption:"POV: the interviewer asks you to reverse a linked list on the spot 💀 #techinterview #leetcode", hashtags:["#techinterview","#leetcode"] },
+    { id:"reel_005", caption:"day in the life of a software engineer (realistic version, not the aesthetic one) 🧑\u200d💻", hashtags:["#softwareengineer","#dayinthelife"] },
+    { id:"reel_006", caption:"MacBook Air M3 vs ThinkPad X1 Carbon — which one should devs actually buy? 🖥️", hashtags:["#macbook","#thinkpad","#laptopforprogrammers"] },
+    { id:"reel_007", caption:"🔥 10 AI tools that will get you HIRED in 2025 (your boss doesn't want you to know these) 😱", hashtags:["#aitools","#viral"] },
+    { id:"reel_008", caption:"PostgreSQL 17 just dropped and the performance gains are actually insane 📊 #postgres #database", hashtags:["#postgresql","#backend"] }
+  ];
+  const TEST_DATA = [
+    { id:"test_001", caption:"Python devs when someone says 'why don't you just use a for loop' 😭🐍 #python #coding", hashtags:["#python","#codingmemes"] },
+    { id:"test_002", caption:"day in the life of a cybersecurity analyst 🔐 (it's not what movies show)", hashtags:["#cybersecurity","#infosec"] },
+    { id:"test_003", caption:"honest review: 6 months at a coding bootcamp — was it worth it? 👨\u200d💻", hashtags:["#codingbootcamp","#careerchange"] },
+    { id:"test_004", caption:"this Elden Ring boss took me 47 attempts and i have ZERO regrets 🗡️💀", hashtags:["#eldenring","#gaming"] }
+  ];
+
+  /* ── Helpers ───────────────────────────────────────── */
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function setStep(n, state, detail) {
+    const el   = document.getElementById(`step${n}`);
+    if (!el) return;
+    const icon = document.getElementById(`icon${n}`);
+    const det  = document.getElementById(`detail${n}`);
+    const shim = document.getElementById(`shimmer${n}`);
+    el.className = `stage-step ${state}`;
+    const icons = { 1:'🔍', 2:'🧠', 3:'📋' };
+    if (state === 'active') {
+      if (icon) icon.innerHTML = '<div class="spinner"></div>';
+      if (shim) shim.style.display = 'block';
+    } else {
+      if (icon) icon.textContent = icons[n] || '✓';
+      if (shim) shim.style.display = 'none';
+    }
+    if (det && detail !== undefined) {
+      det.innerHTML = detail;
+    }
+  }
+
+  function showError(msg) {
+    const b = document.getElementById('errorBox');
+    b.innerHTML = `<strong>❌ Error:</strong> ${esc(msg)}`;
+    b.classList.remove('hidden');
+  }
+  function hideError() { document.getElementById('errorBox').classList.add('hidden'); }
+
+  /* ── Simulated stage progression ──────────────────── */
+  // Advances UI stages while the single server request is pending.
+  // Gives the demo a dynamic, real-time feel.
+  function startProgressSimulation() {
+    simTimers.push(setTimeout(() => {
+      setStep(1, 'active', '<span class="dim">Sending all reels to Gemini in one batch call...</span>');
+    }, 100));
+    simTimers.push(setTimeout(() => {
+      setStep(1, 'done',   '<span class="ok">✓ Topics extracted (1 API call)</span>');
+      setStep(2, 'active', '<span class="dim">Aggregating interest signals + generating recommendation + filtering hype...</span>');
+    }, 8000));
+  }
+
+  function clearSimulation() { simTimers.forEach(clearTimeout); simTimers = []; }
+
+  /* ── Badge helpers with non-color indicators ──────── */
+  function ctBadge(t) {
+    const m = {meme:'ct-meme',lifestyle:'ct-lifestyle',news:'ct-news',comparison:'ct-comparison','hype-bait':'ct-hype-bait',tutorial:'ct-tutorial'};
+    return `<span class="ctype ${m[t]||'ct-meme'}">${esc(t)}</span>`;
+  }
+  function diffPill(d) {
+    const stars = {Beginner:'★',Intermediate:'★★',Advanced:'★★★'}[d]||'';
+    const c = {Beginner:'pill-green',Intermediate:'pill-amber',Advanced:'pill-red'}[d]||'pill-purple';
+    return `<span class="pill ${c}" aria-label="Difficulty: ${esc(d)}"><span aria-hidden="true">${stars} </span>${esc(d)}</span>`;
+  }
+  function confPill(c) {
+    const icon = {High:'● [HIGH]',Medium:'◐ [MED]',Low:'○ [LOW]'}[c]||'●';
+    const cls = {High:'pill-green',Medium:'pill-amber',Low:'pill-red'}[c]||'pill-purple';
+    return `<span class="pill ${cls}" aria-label="Confidence: ${esc(c)}"><span aria-hidden="true">${icon} </span>${esc(c)}</span>`;
+  }
+  function catPill(cat) { return `<span class="pill pill-purple"><span role="img" aria-label="Category">🏷</span> ${esc(cat)}</span>`; }
+
+  /* ── Render Stage 1 cards ──────────────────────────── */
+  function renderStage1(stage1, excludedIds) {
+    const sec  = document.getElementById('stage1Section');
+    const grid = document.getElementById('reelGrid');
+    grid.innerHTML = '';
+    sec.classList.remove('hidden');
+
+    stage1.forEach((r, i) => {
+      const excl = excludedIds.includes(r.id);
+      const card = document.createElement('div');
+      card.className = `reel-card${excl?' excluded':''}`;
+      card.style.animationDelay = `${i * 70}ms`;
+      card.innerHTML = `
+        <div class="reel-id">
+          ${esc(r.id)}
+          ${excl ? '<span class="excl-tag" aria-label="Excluded from recommendation cluster"><span aria-hidden="true">[NOISE] ✕ </span>EXCLUDED</span>' : ''}
+        </div>
+        <div class="reel-field">
+          <div class="rfl">Surface Topic</div>
+          <div class="rfv">${esc(r.primary_topic)}</div>
+        </div>
+        <div class="reel-field">
+          <div class="rfl">Underlying Signal</div>
+          <div class="rfv">${esc(r.underlying_signal)}</div>
+        </div>
+        <div class="reel-field">
+          <div class="rfl">Content Type</div>
+          <div class="rfv">${ctBadge(r.content_type)}</div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  /* ── Render recommendation card ────────────────────── */
+  function renderRec(reelsData, stage1, stage2, stage3) {
+    const sec = document.getElementById('recSection');
+    const box = document.getElementById('recCard');
+    sec.classList.remove('hidden');
+
+    const dom        = stage2.interest_clusters?.find(c => c.cluster_label === stage2.dominant_interest) || stage2.interest_clusters?.[0];
+    const supportIds = dom?.supporting_reel_ids || [];
+    const excluded   = (stage2.excluded_reels || []).map(e => e.id);
+
+    // Pick representative reel
+    const preferred = ['lifestyle','comparison','news','tutorial','meme'];
+    let repReel = null;
+    for (const t of preferred) { repReel = stage1.find(r => supportIds.includes(r.id) && r.content_type === t); if (repReel) break; }
+    if (!repReel && supportIds.length) repReel = stage1.find(r => r.id === supportIds[0]);
+    const rawReel     = reelsData.find(r => r.id === repReel?.id);
+    const currentTxt  = rawReel ? `${rawReel.caption.slice(0,100)}${rawReel.caption.length>100?'…':''}` : supportIds.join(', ');
+
+    // Excluded badge
+    const exclBadge = excluded.length
+      ? `<span class="excl-badge" aria-label="${excluded.length} reels excluded as noise"><span aria-hidden="true">✕ </span>${excluded.length} excluded as noise</span>`
+      : '';
+
+    // Hype filter log
+    const hypeCandidates = (stage3.rejected_candidates || []);
+    const hyp = hypeCandidates.length ? `
+      <div class="hype-log">
+        <div class="hype-log-header"><span role="img" aria-label="Filter rejected">🚫</span> Hype Filter — ${hypeCandidates.length} Candidate(s) Rejected</div>
+        ${hypeCandidates.map(c => `
+          <div class="hype-entry">
+            <div class="rejected-badge">REJECTED</div>
+            <div>
+              <div class="hype-title-struck">"${esc(c.title)}"</div>
+              <div class="hype-reason">${esc(c.reason)}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    ` : '';
+
+    box.innerHTML = `
+      <div class="rec-card">
+        <div class="rec-header">
+          <span role="img" aria-label="Target — recommendation output" style="font-size:24px">🎯</span>
+          <h2>Recommendation Output</h2>
+        </div>
+        <div class="rec-body">
+          <div class="rec-row">
+            <div class="rl">Current Reel</div>
+            <div class="rv">
+              ${esc(currentTxt)}
+              <span style="font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-left:6px">[${esc(repReel?.id||'—')}]</span>
+            </div>
+          </div>
+          <div class="rec-row">
+            <div class="rl">Interest Detected</div>
+            <div class="rv mono">
+              ${esc(stage2.dominant_interest)}${exclBadge}
+            </div>
+          </div>
+          <div class="rec-row">
+            <div class="rl">Why</div>
+            <div class="rv">${esc(dom?.theme_explanation||'—')}</div>
+          </div>
+          <div class="rec-row">
+            <div class="rl">Recommended Tech Reel</div>
+            <div class="rv title">"${esc(stage3.recommended_reel_title)}"</div>
+          </div>
+          <div class="rec-row">
+            <div class="rl">Category</div>
+            <div class="rv">${catPill(stage3.category)}</div>
+          </div>
+          <div class="rec-row">
+            <div class="rl">Why This Recommendation</div>
+            <div class="rv">
+              ${esc(stage3.why_recommendation)}
+              ${hyp}
+            </div>
+          </div>
+          <div class="rec-row">
+            <div class="rl">Difficulty</div>
+            <div class="rv">${diffPill(stage3.difficulty)}</div>
+          </div>
+          <div class="rec-row">
+            <div class="rl">Confidence</div>
+            <div class="rv">
+              ${confPill(stage2.dominant_confidence)}
+              <span style="font-size:14px;color:var(--text-dim);margin-left:4px">
+                ${esc(dom?.confidence_rationale||'')}
+                Supporting: ${supportIds.join(', ')}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  /* ── Main pipeline ─────────────────────────────────── */
+  async function runPipeline() {
+    if (isRunning) return;
+    isRunning = true;
+    hideError();
+
+    const mode = document.getElementById('datasetSelect').value;
+    document.getElementById('btnAnalyze').disabled = true;
+    document.getElementById('stage1Section').classList.add('hidden');
+    document.getElementById('recSection').classList.add('hidden');
+    document.getElementById('reelGrid').innerHTML = '';
+    document.getElementById('recCard').innerHTML = '';
+
+    const prog = document.getElementById('progressSection');
+    prog.classList.add('visible');
+    [1,2,3].forEach(n => setStep(n, 'pending', '—'));
+
+    startProgressSimulation();
+
+    try {
+      const res  = await fetch('/api/analyze', {
+        method : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body   : JSON.stringify({ dataset: mode })
+      });
+      const data = await res.json();
+
+      clearSimulation();
+
+      if (!res.ok || !data.ok) throw new Error(data.error || `Server error ${res.status}`);
+
+      const { stage1, stage2, stage3, meta } = data;
+      const excluded = (stage2.excluded_reels || []).map(e => e.id);
+      // Use client-embedded dataset for rendering captions
+      const reelsData = mode === 'test' ? TEST_DATA : REELS_DATA;
+
+      // Update steps with real results
+      setStep(1, 'done', `<span class="ok">✓ ${stage1.length} reels extracted · 1 API call · key ${meta.keysUsed}/${meta.totalKeys} used</span>`);
+      setStep(2, 'done', `<span class="ok">✓ "${esc(stage2.dominant_interest)}" (${stage2.dominant_confidence}) · ${excluded.length} excluded · accepted: "${esc(stage3.recommended_reel_title?.slice(0,40))}..."</span>`);
+      setStep(3, 'active', '');
+
+      // Staggered reveal
+      await sleep(200);
+      renderStage1(stage1, excluded);
+      await sleep(300);
+      renderRec(reelsData, stage1, stage2, stage3);
+
+      setStep(3, 'done', `<span class="ok">✓ Output rendered · model: ${esc(meta.model)} · ${meta.totalKeys} key(s) configured</span>`);
+
+    } catch(err) {
+      clearSimulation();
+      [1,2,3].forEach(n => setStep(n,'pending','—'));
+      showError(err.message);
+    } finally {
+      isRunning = false;
+      document.getElementById('btnAnalyze').disabled = false;
+    }
+  }
+</script>
+</body>
+</html>

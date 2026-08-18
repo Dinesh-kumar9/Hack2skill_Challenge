@@ -1,0 +1,58 @@
+[
+  {
+    "id": "reel_001",
+    "type": "comedy_entertainment",
+    "caption": "me explaining to my mom why i haven't slept 😭💀 #relatable",
+    "transcript_snippet": "So she walks in at 3am and asks 'why are you still awake?' and I said 'I'm being productive' — I was watching cat videos for 4 hours straight.",
+    "hashtags": ["#relatable", "#momsbelike", "#comedy", "#foryou", "#sleepdeprived"]
+  },
+  {
+    "id": "reel_002",
+    "type": "gaming",
+    "caption": "the most disrespectful play i've ever made 💀🎮 | Valorant",
+    "transcript_snippet": "I'm bronze, he's radiant. I don't know how that happened but I'm never playing ranked again. This is my legacy.",
+    "hashtags": ["#valorant", "#gaming", "#clutch", "#gamingmemes", "#fyp", "#gamer"]
+  },
+  {
+    "id": "reel_003",
+    "type": "coding_meme_java",
+    "caption": "Java developers when they see a NullPointerException at 2am 😂 #javadeveloper #coding",
+    "transcript_snippet": "Line 47: NullPointerException. Line 47 has been staring at me for six hours. I have 3 degrees. I cannot find the null.",
+    "hashtags": ["#java", "#javadeveloper", "#codingmemes", "#programminghumor", "#developer", "#100daysofcode"]
+  },
+  {
+    "id": "reel_004",
+    "type": "coding_interview_joke",
+    "caption": "POV: the interviewer asks you to reverse a linked list on the spot 💀 #techinteview #leetcode",
+    "transcript_snippet": "Interviewer: 'Can you reverse a linked list?' Me in my head: I've done this 40 times. Me out loud: 'So a linked list is... a list... that is linked.'",
+    "hashtags": ["#techinterview", "#leetcode", "#softwareengineer", "#codinginterview", "#swe", "#faang"]
+  },
+  {
+    "id": "reel_005",
+    "type": "swe_lifestyle",
+    "caption": "day in the life of a software engineer (realistic version, not the aesthetic one) 🧑‍💻",
+    "transcript_snippet": "9am: standup. 9:15am: pretend to understand what the senior dev said. 11am: stack overflow. 2pm: it works, I don't know why. 5pm: it broke again.",
+    "hashtags": ["#softwareengineer", "#dayinthelife", "#techjobs", "#swe", "#bigtech", "#developerlife", "#coding"]
+  },
+  {
+    "id": "reel_006",
+    "type": "laptop_gadget_comparison",
+    "caption": "MacBook Air M3 vs ThinkPad X1 Carbon — which one should devs actually buy? 🖥️",
+    "transcript_snippet": "If you're doing heavy builds and Docker containers, the M3 chip just destroys the competition on battery. But ThinkPad's keyboard and repairability? Unmatched for Linux users.",
+    "hashtags": ["#macbook", "#thinkpad", "#laptopforprogrammers", "#techreview", "#developersetup", "#m3chip", "#linux"]
+  },
+  {
+    "id": "reel_007",
+    "type": "ai_hype_clickbait",
+    "caption": "🔥 10 AI tools that will get you HIRED in 2025 (your boss doesn't want you to know these) 😱",
+    "transcript_snippet": "Number one: this AI writes your entire resume FOR you — it's crazy, companies are literally BEGGING for people who know this. Number two will BLOW your mind, I promise.",
+    "hashtags": ["#aitools", "#getajob", "#artificialintelligence", "#careeradvice", "#chatgpt", "#mindblowing", "#viral", "#lifehack"]
+  },
+  {
+    "id": "reel_008",
+    "type": "genuine_tech_news",
+    "caption": "PostgreSQL 17 just dropped and the performance gains are actually insane 📊 #postgres #database",
+    "transcript_snippet": "PostgreSQL 17 brings a new memory management system for vacuuming that reduces I/O by up to 40% on write-heavy workloads. If you're running Postgres in production, this upgrade is worth benchmarking.",
+    "hashtags": ["#postgresql", "#postgres", "#database", "#backend", "#devnews", "#opensource", "#softwaredevelopment"]
+  }
+]

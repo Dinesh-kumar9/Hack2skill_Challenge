@@ -1,0 +1,30 @@
+[
+  {
+    "id": "test_001",
+    "type": "python_meme",
+    "caption": "Python devs when someone says 'why don't you just use a for loop' 😭🐍 #python #coding",
+    "transcript_snippet": "Me: I wrote a beautiful one-liner using list comprehension, lambda, and map. Them: why didn't you just use a for loop. Me: *deletes 3 years of work*",
+    "hashtags": ["#python", "#pythondeveloper", "#codingmemes", "#programminghumor", "#pythonprogramming", "#100daysofcode", "#developer"]
+  },
+  {
+    "id": "test_002",
+    "type": "cybersecurity_lifestyle",
+    "caption": "day in the life of a cybersecurity analyst 🔐 (it's not what movies show)",
+    "transcript_snippet": "8am: review overnight SIEM alerts — 400 of them, 398 are false positives. 10am: write an incident report no one will read. 3pm: someone clicked a phishing link. Again. 5pm: patch Tuesday broke production.",
+    "hashtags": ["#cybersecurity", "#infosec", "#dayinthelife", "#soc", "#ethicalhacking", "#cybersecuritycareer", "#siem", "#penetrationtesting"]
+  },
+  {
+    "id": "test_003",
+    "type": "coding_bootcamp_review",
+    "caption": "honest review: 6 months at a coding bootcamp — was it worth it? 👨‍💻",
+    "transcript_snippet": "Week 1: JavaScript fundamentals, felt like a genius. Week 8: Node, Express, databases — barely sleeping. Month 5: built my first full-stack app. Month 6: job hunting. Verdict: hard, humbling, and actually worth it if you put in the hours.",
+    "hashtags": ["#codingbootcamp", "#learntocode", "#webdevelopment", "#javascript", "#fullstack", "#careerchange", "#techjobs", "#selftaughtdeveloper"]
+  },
+  {
+    "id": "test_004",
+    "type": "gaming_unrelated",
+    "caption": "this Elden Ring boss took me 47 attempts and i have ZERO regrets 🗡️💀",
+    "transcript_snippet": "Attempt 1 through 46: humiliation. Attempt 47: I don't know what happened, my hands just moved on their own. Malenia down. I cried. Not ashamed.",
+    "hashtags": ["#eldenring", "#gaming", "#soulsborne", "#gamer", "#fromsoftware", "#bossfight", "#fyp", "#gamingmemes"]
+  }
+]

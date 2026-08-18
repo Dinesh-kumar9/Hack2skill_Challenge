@@ -1,0 +1,15 @@
+# Dependencies
+node_modules/
+
+# Environment variables — NEVER commit API keys
+.env
+.env.local
+
+# Vercel
+.vercel/
+
+# OS & Local Scratch
+.DS_Store
+Thumbs.db
+*_live.json
+

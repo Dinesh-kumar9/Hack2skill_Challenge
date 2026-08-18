@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Version control
+.git/
+.gitignore
+
+# Environment — never bake keys into image
+.env
+.env.local
+.env.example
+
+# Vercel artifacts
+.vercel/
+vercel.json
+
+# Tests — not needed at runtime
+test/
+
+# CLI tool — not needed in container (server.js handles HTTP)
+agent.js
+
+# Docs
+README.md
+ARCHITECTURE.md
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+*.log

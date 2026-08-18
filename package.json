@@ -1,0 +1,19 @@
+{
+  "name": "hack2skill-reel-intelligence",
+  "version": "1.0.0",
+  "description": "AI agent that infers deeper tech interests from Instagram Reel watch history and recommends educational content. 3 LLM API calls total, hype-filter enforced.",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "cli": "node agent.js",
+    "test": "node test/pipeline.test.js",
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.4.5",
+    "express": "^5.2.1"
+  }
+}
