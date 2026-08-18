@@ -296,6 +296,7 @@
       border-radius: var(--radius);
       padding: 18px;
       opacity: 0;
+      contain: layout style;
       animation: fadeSlideIn .35s ease forwards;
     }
     .reel-card.excluded { opacity: 0; animation: fadeSlideIn .35s ease forwards; filter: grayscale(.6); border-style: dashed; }
@@ -319,6 +320,7 @@
       border: 1px solid var(--accent);
       border-radius: var(--radius);
       overflow: hidden;
+      contain: layout style;
       animation: glowPulse 3s ease-in-out infinite, fadeSlideIn .5s ease both;
     }
     .rec-header {
@@ -560,6 +562,23 @@
     { id:"test_004", caption:"this Elden Ring boss took me 47 attempts and i have ZERO regrets 🗡️💀", hashtags:["#eldenring","#gaming"] }
   ];
 
+  /* ── DOM Element Cache — eliminates repetitive lookups ── */
+  const DOM = {
+    btnAnalyze:      document.getElementById('btnAnalyze'),
+    datasetSelect:   document.getElementById('datasetSelect'),
+    errorBox:        document.getElementById('errorBox'),
+    progressSection: document.getElementById('progressSection'),
+    stage1Section:   document.getElementById('stage1Section'),
+    reelGrid:        document.getElementById('reelGrid'),
+    recSection:      document.getElementById('recSection'),
+    recCard:         document.getElementById('recCard'),
+    steps: {
+      1: { el: document.getElementById('step1'), icon: document.getElementById('icon1'), det: document.getElementById('detail1'), shim: document.getElementById('shimmer1') },
+      2: { el: document.getElementById('step2'), icon: document.getElementById('icon2'), det: document.getElementById('detail2'), shim: document.getElementById('shimmer2') },
+      3: { el: document.getElementById('step3'), icon: document.getElementById('icon3'), det: document.getElementById('detail3'), shim: document.getElementById('shimmer3') }
+    }
+  };
+
   /* ── Helpers ───────────────────────────────────────── */
   function esc(s) {
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -567,31 +586,27 @@
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   function setStep(n, state, detail) {
-    const el   = document.getElementById(`step${n}`);
-    if (!el) return;
-    const icon = document.getElementById(`icon${n}`);
-    const det  = document.getElementById(`detail${n}`);
-    const shim = document.getElementById(`shimmer${n}`);
-    el.className = `stage-step ${state}`;
+    const s = DOM.steps[n];
+    if (!s || !s.el) return;
+    s.el.className = `stage-step ${state}`;
     const icons = { 1:'🔍', 2:'🧠', 3:'📋' };
     if (state === 'active') {
-      if (icon) icon.innerHTML = '<div class="spinner"></div>';
-      if (shim) shim.style.display = 'block';
+      if (s.icon) s.icon.innerHTML = '<div class="spinner"></div>';
+      if (s.shim) s.shim.style.display = 'block';
     } else {
-      if (icon) icon.textContent = icons[n] || '✓';
-      if (shim) shim.style.display = 'none';
+      if (s.icon) s.icon.textContent = icons[n] || '✓';
+      if (s.shim) s.shim.style.display = 'none';
     }
-    if (det && detail !== undefined) {
-      det.innerHTML = detail;
+    if (s.det && detail !== undefined) {
+      s.det.innerHTML = detail;
     }
   }
 
   function showError(msg) {
-    const b = document.getElementById('errorBox');
-    b.innerHTML = `<strong>❌ Error:</strong> ${esc(msg)}`;
-    b.classList.remove('hidden');
+    DOM.errorBox.innerHTML = `<strong>❌ Error:</strong> ${esc(msg)}`;
+    DOM.errorBox.classList.remove('hidden');
   }
-  function hideError() { document.getElementById('errorBox').classList.add('hidden'); }
+  function hideError() { DOM.errorBox.classList.add('hidden'); }
 
   /* ── Simulated stage progression ──────────────────── */
   // Advances UI stages while the single server request is pending.
@@ -625,45 +640,38 @@
   }
   function catPill(cat) { return `<span class="pill pill-purple"><span role="img" aria-label="Category">🏷</span> ${esc(cat)}</span>`; }
 
-  /* ── Render Stage 1 cards ──────────────────────────── */
+  /* ── Render Stage 1 cards (Single Batch DOM Injection) ── */
   function renderStage1(stage1, excludedIds) {
-    const sec  = document.getElementById('stage1Section');
-    const grid = document.getElementById('reelGrid');
-    grid.innerHTML = '';
-    sec.classList.remove('hidden');
-
-    stage1.forEach((r, i) => {
+    DOM.reelGrid.innerHTML = stage1.map((r, i) => {
       const excl = excludedIds.includes(r.id);
-      const card = document.createElement('div');
-      card.className = `reel-card${excl?' excluded':''}`;
-      card.style.animationDelay = `${i * 70}ms`;
-      card.innerHTML = `
-        <div class="reel-id">
-          ${esc(r.id)}
-          ${excl ? '<span class="excl-tag" aria-label="Excluded from recommendation cluster"><span aria-hidden="true">[NOISE] ✕ </span>EXCLUDED</span>' : ''}
-        </div>
-        <div class="reel-field">
-          <div class="rfl">Surface Topic</div>
-          <div class="rfv">${esc(r.primary_topic)}</div>
-        </div>
-        <div class="reel-field">
-          <div class="rfl">Underlying Signal</div>
-          <div class="rfv">${esc(r.underlying_signal)}</div>
-        </div>
-        <div class="reel-field">
-          <div class="rfl">Content Type</div>
-          <div class="rfv">${ctBadge(r.content_type)}</div>
+      return `
+        <div class="reel-card${excl?' excluded':''}" style="animation-delay:${i * 70}ms">
+          <div class="reel-id">
+            ${esc(r.id)}
+            ${excl ? '<span class="excl-tag" aria-label="Excluded from recommendation cluster"><span aria-hidden="true">[NOISE] ✕ </span>EXCLUDED</span>' : ''}
+          </div>
+          <div class="reel-field">
+            <div class="rfl">Surface Topic</div>
+            <div class="rfv">${esc(r.primary_topic)}</div>
+          </div>
+          <div class="reel-field">
+            <div class="rfl">Underlying Signal</div>
+            <div class="rfv">${esc(r.underlying_signal)}</div>
+          </div>
+          <div class="reel-field">
+            <div class="rfl">Content Type</div>
+            <div class="rfv">${ctBadge(r.content_type)}</div>
+          </div>
         </div>
       `;
-      grid.appendChild(card);
-    });
+    }).join('');
+    DOM.stage1Section.classList.remove('hidden');
   }
 
   /* ── Render recommendation card ────────────────────── */
   function renderRec(reelsData, stage1, stage2, stage3) {
-    const sec = document.getElementById('recSection');
-    const box = document.getElementById('recCard');
-    sec.classList.remove('hidden');
+    DOM.recSection.classList.remove('hidden');
+    const box = DOM.recCard;
 
     const dom        = stage2.interest_clusters?.find(c => c.cluster_label === stage2.dominant_interest) || stage2.interest_clusters?.[0];
     const supportIds = dom?.supporting_reel_ids || [];
@@ -764,15 +772,14 @@
     isRunning = true;
     hideError();
 
-    const mode = document.getElementById('datasetSelect').value;
-    document.getElementById('btnAnalyze').disabled = true;
-    document.getElementById('stage1Section').classList.add('hidden');
-    document.getElementById('recSection').classList.add('hidden');
-    document.getElementById('reelGrid').innerHTML = '';
-    document.getElementById('recCard').innerHTML = '';
+    const mode = DOM.datasetSelect.value;
+    DOM.btnAnalyze.disabled = true;
+    DOM.stage1Section.classList.add('hidden');
+    DOM.recSection.classList.add('hidden');
+    DOM.reelGrid.innerHTML = '';
+    DOM.recCard.innerHTML = '';
 
-    const prog = document.getElementById('progressSection');
-    prog.classList.add('visible');
+    DOM.progressSection.classList.add('visible');
     [1,2,3].forEach(n => setStep(n, 'pending', '—'));
 
     startProgressSimulation();
@@ -813,7 +820,7 @@
       showError(err.message);
     } finally {
       isRunning = false;
-      document.getElementById('btnAnalyze').disabled = false;
+      DOM.btnAnalyze.disabled = false;
     }
   }
 </script>

@@ -32,12 +32,26 @@ const ALLOWED_CATEGORIES = [
 ];
 const MODEL = 'gemini-3.6-flash';
 
+// Module-level client cache to reuse instances across warm invocations
+const modelCache = new Map();
+function getCachedModel(key) {
+  if (!modelCache.has(key)) {
+    modelCache.set(key, new GoogleGenerativeAI(key).getGenerativeModel({
+      model: MODEL,
+      generationConfig: { temperature: 0.2 }
+    }));
+  }
+  return modelCache.get(key);
+}
+
 // ── Main Handler ──────────────────────────────────────────────
 module.exports = async (req, res) => {
-  // CORS — allow same-origin and local dev
+  // Response & CORS headers — optimized for no-store efficiency
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
@@ -73,14 +87,8 @@ module.exports = async (req, res) => {
       console.log(`🔑 [${label}] attempt ${attempt}/${maxAttempts} — key ${keyIndex+1}/${rawKeys.length}`);
       keyUsage[keyIndex]++;
 
-      // Instantiate once per attempt (key may have rotated since last attempt)
-      const genAI = new GoogleGenerativeAI(currentKey());
-      const model = genAI.getGenerativeModel({
-        model: MODEL,
-        generationConfig: {
-          temperature: 0.2
-        }
-      });
+      // Use cached model instance for efficiency (reuses TLS connection pool)
+      const model = getCachedModel(currentKey());
 
       try {
         const result = await model.generateContent(prompt);
