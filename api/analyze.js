@@ -99,9 +99,9 @@ module.exports = async (req, res) => {
       const model = getCachedModel(currentKey());
 
       try {
-        // Fast 22-second per-attempt timeout: if key hangs, rotate immediately
+        // 45-second per-attempt timeout (ensures single attempt has time to finish without false aborts)
         const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('API request timed out (22s limit)')), 22000)
+          setTimeout(() => reject(new Error('API request timed out (45s limit)')), 45000)
         );
         const result = await Promise.race([
           model.generateContent(prompt),
@@ -163,7 +163,7 @@ module.exports = async (req, res) => {
    */
   async function runUnifiedPipeline(reelsData) {
     const reelsList = reelsData.map((r, i) =>
-      `[${i+1}] ID: ${r.id}\nCaption: "${r.caption}"\nTags: ${r.hashtags.slice(0, 5).join(', ')}`
+      `[${i+1}] ID: ${r.id}\nCaption: "${r.caption.slice(0, 100)}"\nTags: ${r.hashtags.slice(0, 3).join(', ')}`
     ).join('\n\n');
 
     const prompt = `
