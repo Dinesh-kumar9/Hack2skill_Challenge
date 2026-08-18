@@ -184,6 +184,7 @@
       padding-right: 38px;
     }
     .dataset-select:focus { border-color: var(--accent); }
+    .dataset-select:focus-visible { outline: 2px solid var(--accent2); outline-offset: 2px; }
     .dataset-select option { background: #1c1e28; }
 
     /* Analyze button */
@@ -209,6 +210,7 @@
       box-shadow: 0 0 38px rgba(108,99,255,.4);
       transform: translateY(-1px);
     }
+    .btn-analyze:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
     .btn-analyze:disabled { opacity: .45; cursor: not-allowed; transform: none; }
     .btn-analyze .btn-icon { font-size: 18px; }
 
@@ -498,7 +500,7 @@
   <!-- ─── Progress ─────────────────────────────────────── -->
   <div id="progressSection" class="progress-section">
     <h2 class="progress-title">Pipeline Progress</h2>
-    <div class="stage-steps" aria-live="polite" aria-label="Pipeline status">
+    <div class="stage-steps" role="status" aria-live="polite" aria-atomic="true" aria-label="Pipeline status">
       <div id="step1" class="stage-step pending">
         <span class="step-icon" id="icon1">🔍</span>
         <div class="step-body">

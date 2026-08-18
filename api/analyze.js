@@ -44,14 +44,22 @@ function getCachedModel(key) {
   return modelCache.get(key);
 }
 
+// In-memory response cache (60s TTL) for fast repeated dataset queries
+const responseCache = new Map();
+const CACHE_TTL_MS = 60 * 1000;
+
 // ── Main Handler ──────────────────────────────────────────────
 module.exports = async (req, res) => {
-  // Response & CORS headers — optimized for no-store efficiency
+  // Response & Security Headers — OWASP/HIPAA/PCI compliance recommendations
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')   return res.status(405).json({ error: 'Method not allowed' });
 
@@ -211,8 +219,24 @@ STRICT REASONING RULES:
   }
 
   // ── Orchestrate ───────────────────────────────────────────
-  const { dataset = 'main' } = req.body || {};
+  const body = req.body || {};
+  const dataset = (typeof body.dataset === 'string' && body.dataset === 'test') ? 'test' : 'main';
   const reelsData = dataset === 'test' ? TEST_DATA : REELS_DATA;
+  const forceRefresh = Boolean(body.forceRefresh);
+
+  // Check in-memory cache for fast repeated reviews
+  const cacheKey = `dataset_${dataset}`;
+  const cached = responseCache.get(cacheKey);
+  if (!forceRefresh && cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+    console.log(`⚡ Serving dataset="${dataset}" from warm in-memory cache (${Math.round((Date.now()-cached.timestamp)/1000)}s old)`);
+    return res.status(200).json({
+      ...cached.payload,
+      meta: {
+        ...cached.payload.meta,
+        cached: true
+      }
+    });
+  }
 
   try {
     console.log(`\n📥 Analyze request: dataset="${dataset}", ${reelsData.length} reels, ${rawKeys.length} key(s)`);
@@ -224,7 +248,7 @@ STRICT REASONING RULES:
 
     console.log(`✓ Pipeline Complete: "${s2.dominant_interest}" (${s2.dominant_confidence}) → "${s3.recommended_reel_title}"`);
 
-    return res.status(200).json({
+    const payload = {
       ok     : true,
       dataset,
       stage1 : s1,
@@ -234,9 +258,15 @@ STRICT REASONING RULES:
         totalKeys  : rawKeys.length,
         keysUsed   : keyUsage.filter(Boolean).length,
         rotationLog,
-        model      : MODEL
+        model      : MODEL,
+        cached     : false
       }
-    });
+    };
+
+    // Store in warm cache
+    responseCache.set(cacheKey, { payload, timestamp: Date.now() });
+
+    return res.status(200).json(payload);
 
   } catch (err) {
     console.error('Pipeline error:', err.message);
