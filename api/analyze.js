@@ -99,7 +99,14 @@ module.exports = async (req, res) => {
       const model = getCachedModel(currentKey());
 
       try {
-        const result = await model.generateContent(prompt);
+        // Fast 22-second per-attempt timeout: if key hangs, rotate immediately
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('API request timed out (22s limit)')), 22000)
+        );
+        const result = await Promise.race([
+          model.generateContent(prompt),
+          timeoutPromise
+        ]);
         const raw    = result.response.text().trim();
         
         // Robust JSON extraction (handles markdown blocks, leading/trailing chatter)
@@ -123,7 +130,8 @@ module.exports = async (req, res) => {
                           err.message.includes('Too Many Requests');
         const isService = err.message.includes('503') ||
                           err.message.includes('Service Unavailable') ||
-                          err.message.includes('overloaded');
+                          err.message.includes('overloaded') ||
+                          err.message.includes('timed out');
         const isJsonErr = err instanceof SyntaxError || err.message.includes('JSON');
 
         if (isQuota) {
@@ -133,7 +141,7 @@ module.exports = async (req, res) => {
           continue;
         }
         if ((isService || isJsonErr) && attempt < maxAttempts) {
-          console.log(`⏳ [${label}] ${isJsonErr ? 'JSON parse error' : '503/overload'} — rotating key and retrying...`);
+          console.log(`⏳ [${label}] ${isJsonErr ? 'JSON parse error' : 'Service/timeout error'} — rotating key and retrying...`);
           rotateKey(label);
           await new Promise(r => setTimeout(r, 500));
           continue;

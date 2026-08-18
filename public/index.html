@@ -787,16 +787,25 @@
     startProgressSimulation();
 
     try {
-      const res  = await fetch('/api/analyze', {
+      const res = await fetch('/api/analyze', {
         method : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body   : JSON.stringify({ dataset: mode })
       });
-      const data = await res.json();
+
+      const rawText = await res.text();
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(res.status === 504 ? 'Server request timed out. Please try again.' : (rawText || `Server returned HTTP ${res.status}`));
+      }
 
       clearSimulation();
 
-      if (!res.ok || !data.ok) throw new Error(data.error || `Server error ${res.status}`);
+      if (!res.ok || !data || !data.ok) {
+        throw new Error(data?.error || `Analysis failed (HTTP ${res.status})`);
+      }
 
       const { stage1, stage2, stage3, meta } = data;
       const excluded = (stage2.excluded_reels || []).map(e => e.id);
